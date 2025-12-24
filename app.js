@@ -999,6 +999,7 @@ function shuffleMeal(category) {
     if (meal) {
         plans[activeDayIndex][category] = meal;
         updateMealDisplay(category, meal);
+        renderDaySummary();
         savePlan();
     }
 }
@@ -1041,6 +1042,7 @@ function cycleMeal(category) {
     
     plans[activeDayIndex][category] = meals[nextIndex];
     updateMealDisplay(category, meals[nextIndex]);
+    renderDaySummary();
     savePlan();
 }
 
