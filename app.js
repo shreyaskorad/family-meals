@@ -1033,8 +1033,72 @@ function updateMealDisplay(category, meal) {
         const nameEl = el.querySelector('.meal-name');
         const infoEl = el.querySelector('.meal-info');
         if (nameEl) nameEl.textContent = meal.name;
-        if (infoEl) infoEl.textContent = `${meal.source || ''}${meal.protein ? ` · ${meal.protein}` : ''}`;
+        
+        // Get protein info from nutrition DB if available
+        let proteinInfo = meal.protein || '';
+        let proteinGrams = '';
+        if (window.NUTRITION_DB && meal.name) {
+            const dishInfo = lookupDishProtein(meal.name, category);
+            if (dishInfo) {
+                proteinGrams = `~${dishInfo.protein}g`;
+            }
+        }
+        
+        if (infoEl) {
+            const parts = [meal.source || ''];
+            if (proteinInfo) parts.push(proteinInfo);
+            if (proteinGrams) parts.push(proteinGrams);
+            infoEl.textContent = parts.filter(Boolean).join(' · ');
+        }
     }
+}
+
+// Lookup protein from nutrition database
+function lookupDishProtein(dishName, category) {
+    if (!window.NUTRITION_DB) return null;
+    
+    const name = dishName.toLowerCase();
+    const catKey = category.replace('baby', '').toLowerCase() || 'lunch';
+    
+    // First check dishes database
+    const dishes = NUTRITION_DB.dishes;
+    const catDishes = dishes[catKey] || dishes.lunch || [];
+    
+    for (const dish of catDishes) {
+        if (name.includes(dish.name.toLowerCase()) || dish.name.toLowerCase().includes(name.split('+')[0].trim())) {
+            return dish;
+        }
+    }
+    
+    // Fuzzy match on common keywords
+    const proteinKeywords = {
+        'chicken': { protein: 25, proteinLevel: 'High' },
+        'mutton': { protein: 28, proteinLevel: 'High' },
+        'fish': { protein: 22, proteinLevel: 'High' },
+        'surmai': { protein: 22, proteinLevel: 'High' },
+        'pomfret': { protein: 20, proteinLevel: 'High' },
+        'prawn': { protein: 24, proteinLevel: 'High' },
+        'egg': { protein: 13, proteinLevel: 'High' },
+        'paneer': { protein: 16, proteinLevel: 'High' },
+        'soya': { protein: 22, proteinLevel: 'High' },
+        'dal': { protein: 10, proteinLevel: 'Medium' },
+        'rajma': { protein: 12, proteinLevel: 'Medium' },
+        'chole': { protein: 11, proteinLevel: 'Medium' },
+        'chana': { protein: 11, proteinLevel: 'Medium' },
+        'khichdi': { protein: 8, proteinLevel: 'Medium' },
+        'omelette': { protein: 14, proteinLevel: 'High' },
+        'bhurji': { protein: 14, proteinLevel: 'High' },
+        'momos': { protein: 12, proteinLevel: 'Medium' },
+        'biryani': { protein: 20, proteinLevel: 'High' },
+    };
+    
+    for (const [keyword, info] of Object.entries(proteinKeywords)) {
+        if (name.includes(keyword)) {
+            return info;
+        }
+    }
+    
+    return null;
 }
 
 // ============================================
@@ -1217,8 +1281,8 @@ function renderActiveDay() {
 function renderDaySummary() {
     const dayPlan = plans[activeDayIndex] || createEmptyDayPlan();
     const meals = ['breakfast', 'lunch', 'snacks', 'dinner']
-        .map(k => dayPlan[k])
-        .filter(Boolean);
+        .map(k => ({ meal: dayPlan[k], category: k }))
+        .filter(x => x.meal);
 
     const counts = {
         You: 0,
@@ -1229,7 +1293,10 @@ function renderDaySummary() {
         proteinLow: 0
     };
 
-    meals.forEach(m => {
+    // Calculate estimated protein from nutrition DB
+    let totalProteinGrams = 0;
+    
+    meals.forEach(({ meal: m, category }) => {
         if (m.source === 'Maid') counts.Maid++;
         else if (m.source === 'Order') counts.Order++;
         else counts.You++;
@@ -1237,6 +1304,17 @@ function renderDaySummary() {
         if (m.protein === 'High') counts.proteinHigh++;
         else if (m.protein === 'Medium') counts.proteinMed++;
         else counts.proteinLow++;
+        
+        // Lookup protein grams from nutrition DB
+        const dishInfo = lookupDishProtein(m.name, category);
+        if (dishInfo && dishInfo.protein) {
+            totalProteinGrams += dishInfo.protein;
+        } else {
+            // Estimate based on protein level
+            if (m.protein === 'High') totalProteinGrams += 20;
+            else if (m.protein === 'Medium') totalProteinGrams += 10;
+            else totalProteinGrams += 5;
+        }
     });
 
     // Protein score: High=3, Medium=2, Low=1. Target: at least 8 points (e.g., 2 High + 1 Med = 8)
@@ -1244,20 +1322,20 @@ function renderDaySummary() {
     const mealsPlanned = meals.length;
     const maxScore = mealsPlanned * 3;
     
-    // Determine protein status
+    // Determine protein status - now with grams target (50g+ is good for adults)
     let proteinStatus = '';
     let proteinEmoji = '';
     if (mealsPlanned === 0) {
         proteinStatus = 'No meals yet';
         proteinEmoji = '⚪';
-    } else if (proteinScore >= 8 || (mealsPlanned < 4 && counts.proteinHigh >= 1)) {
-        proteinStatus = 'Good protein';
+    } else if (totalProteinGrams >= 50 || (proteinScore >= 8)) {
+        proteinStatus = `~${totalProteinGrams}g protein`;
         proteinEmoji = '💪';
-    } else if (proteinScore >= 6 || counts.proteinHigh >= 1) {
-        proteinStatus = 'Okay protein';
+    } else if (totalProteinGrams >= 35 || proteinScore >= 6) {
+        proteinStatus = `~${totalProteinGrams}g protein`;
         proteinEmoji = '👍';
     } else {
-        proteinStatus = 'Needs protein!';
+        proteinStatus = `Only ~${totalProteinGrams}g`;
         proteinEmoji = '⚠️';
     }
 
@@ -1268,15 +1346,15 @@ function renderDaySummary() {
     if (chipSource) chipSource.textContent = `You ${counts.You} · Maid ${counts.Maid} · Order ${counts.Order}`;
     if (chipProtein) {
         chipProtein.textContent = `${proteinEmoji} ${proteinStatus}`;
-        chipProtein.className = 'chip';
-        if (proteinStatus === 'Needs protein!') chipProtein.classList.add('chip-warn');
-        else if (proteinStatus === 'Good protein') chipProtein.classList.add('chip-good');
+        chipProtein.className = 'summary-chip';
+        if (totalProteinGrams < 35 && mealsPlanned >= 2) chipProtein.classList.add('chip-warn');
+        else if (totalProteinGrams >= 50) chipProtein.classList.add('chip-good');
     }
 
     const warnings = [];
     if (counts.Order >= 3) warnings.push('🍕 High order-in day');
     if (mealsPlanned >= 3 && counts.proteinHigh === 0) warnings.push('💡 Add a high-protein meal');
-    if (mealsPlanned === 4 && proteinScore < 6) warnings.push('🥩 Consider: eggs, chicken, fish, paneer, dal');
+    if (mealsPlanned >= 3 && totalProteinGrams < 40) warnings.push('🥩 Try: eggs, chicken, fish, paneer, dal');
 
     if (warn) {
         if (warnings.length) {
@@ -1477,12 +1555,19 @@ function renderAllMealsList() {
         const meals = getAllMeals(cat);
         meals.forEach(meal => {
             const isCustom = (customMeals[cat] || []).some(m => m.name === meal.name);
+            
+            // Get protein grams from nutrition DB
+            const dishInfo = lookupDishProtein(meal.name, cat);
+            const proteinGrams = dishInfo ? `~${dishInfo.protein}g` : '';
+            const metaParts = [meal.source, meal.protein];
+            if (proteinGrams) metaParts.push(proteinGrams);
+            
             const div = document.createElement('div');
             div.className = 'meal-list-item';
             div.innerHTML = `
                 <div class="info">
                     <div class="name">${meal.name}</div>
-                    <div class="meta">${meal.source} · ${meal.protein}</div>
+                    <div class="meta">${metaParts.filter(Boolean).join(' · ')}</div>
                 </div>
                 ${isCustom ? `
                     <div class="row-actions">
