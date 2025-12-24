@@ -1,7 +1,7 @@
 // Service Worker for Family Meals PWA
 // Caches app shell for offline use
 
-const CACHE_NAME = 'family-meals-v1';
+const CACHE_NAME = 'family-meals-v2';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -9,6 +9,7 @@ const ASSETS_TO_CACHE = [
   './app.js',
   './data.js',
   './db/food_db.js',
+  './db/nutrition_db.js',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png'
