@@ -1065,20 +1065,23 @@ function updateMealDisplay(category, meal) {
         const infoEl = el.querySelector('.meal-info');
         if (nameEl) nameEl.textContent = meal.name;
         
-        // Get protein info from nutrition DB if available
+        // Get nutrition info from nutrition DB if available
         let proteinInfo = meal.protein || '';
-        let proteinGrams = '';
+        let nutritionStr = '';
         if (window.NUTRITION_DB && meal.name) {
             const dishInfo = lookupDishProtein(meal.name, category);
             if (dishInfo) {
-                proteinGrams = `~${dishInfo.protein}g`;
+                const parts = [];
+                if (dishInfo.protein) parts.push(`${dishInfo.protein}g`);
+                if (dishInfo.cal) parts.push(`${dishInfo.cal}kcal`);
+                nutritionStr = parts.join(' · ');
             }
         }
         
         if (infoEl) {
             const parts = [meal.source || ''];
-            if (proteinInfo) parts.push(proteinInfo);
-            if (proteinGrams) parts.push(proteinGrams);
+            if (nutritionStr) parts.push(nutritionStr);
+            else if (proteinInfo) parts.push(proteinInfo);
             infoEl.textContent = parts.filter(Boolean).join(' · ');
         }
     }
@@ -1101,26 +1104,26 @@ function lookupDishProtein(dishName, category) {
         }
     }
     
-    // Fuzzy match on common keywords
+    // Fuzzy match on common keywords (with cal estimates)
     const proteinKeywords = {
-        'chicken': { protein: 25, proteinLevel: 'High' },
-        'mutton': { protein: 28, proteinLevel: 'High' },
-        'fish': { protein: 22, proteinLevel: 'High' },
-        'surmai': { protein: 22, proteinLevel: 'High' },
-        'pomfret': { protein: 20, proteinLevel: 'High' },
-        'prawn': { protein: 24, proteinLevel: 'High' },
-        'egg': { protein: 13, proteinLevel: 'High' },
-        'paneer': { protein: 16, proteinLevel: 'High' },
-        'soya': { protein: 22, proteinLevel: 'High' },
-        'dal': { protein: 10, proteinLevel: 'Medium' },
-        'rajma': { protein: 12, proteinLevel: 'Medium' },
-        'chole': { protein: 11, proteinLevel: 'Medium' },
-        'chana': { protein: 11, proteinLevel: 'Medium' },
-        'khichdi': { protein: 8, proteinLevel: 'Medium' },
-        'omelette': { protein: 14, proteinLevel: 'High' },
-        'bhurji': { protein: 14, proteinLevel: 'High' },
-        'momos': { protein: 12, proteinLevel: 'Medium' },
-        'biryani': { protein: 20, proteinLevel: 'High' },
+        'chicken': { protein: 25, proteinLevel: 'High', cal: 420 },
+        'mutton': { protein: 28, proteinLevel: 'High', cal: 500 },
+        'fish': { protein: 22, proteinLevel: 'High', cal: 350 },
+        'surmai': { protein: 22, proteinLevel: 'High', cal: 350 },
+        'pomfret': { protein: 20, proteinLevel: 'High', cal: 320 },
+        'prawn': { protein: 24, proteinLevel: 'High', cal: 380 },
+        'egg': { protein: 13, proteinLevel: 'High', cal: 200 },
+        'paneer': { protein: 16, proteinLevel: 'High', cal: 380 },
+        'soya': { protein: 22, proteinLevel: 'High', cal: 350 },
+        'dal': { protein: 10, proteinLevel: 'Medium', cal: 350 },
+        'rajma': { protein: 12, proteinLevel: 'Medium', cal: 400 },
+        'chole': { protein: 11, proteinLevel: 'Medium', cal: 420 },
+        'chana': { protein: 11, proteinLevel: 'Medium', cal: 400 },
+        'khichdi': { protein: 8, proteinLevel: 'Medium', cal: 300 },
+        'omelette': { protein: 14, proteinLevel: 'High', cal: 180 },
+        'bhurji': { protein: 14, proteinLevel: 'High', cal: 200 },
+        'momos': { protein: 12, proteinLevel: 'Medium', cal: 280 },
+        'biryani': { protein: 20, proteinLevel: 'High', cal: 550 },
     };
     
     for (const [keyword, info] of Object.entries(proteinKeywords)) {
@@ -1324,8 +1327,9 @@ function renderDaySummary() {
         proteinLow: 0
     };
 
-    // Calculate estimated protein from nutrition DB
+    // Calculate estimated protein & calories from nutrition DB
     let totalProteinGrams = 0;
+    let totalCalories = 0;
     
     meals.forEach(({ meal: m, category }) => {
         if (m.source === 'Maid') counts.Maid++;
@@ -1336,22 +1340,22 @@ function renderDaySummary() {
         else if (m.protein === 'Medium') counts.proteinMed++;
         else counts.proteinLow++;
         
-        // Lookup protein grams from nutrition DB
+        // Lookup nutrition from DB
         const dishInfo = lookupDishProtein(m.name, category);
-        if (dishInfo && dishInfo.protein) {
-            totalProteinGrams += dishInfo.protein;
+        if (dishInfo) {
+            if (dishInfo.protein) totalProteinGrams += dishInfo.protein;
+            if (dishInfo.cal) totalCalories += dishInfo.cal;
         } else {
             // Estimate based on protein level
-            if (m.protein === 'High') totalProteinGrams += 20;
-            else if (m.protein === 'Medium') totalProteinGrams += 10;
-            else totalProteinGrams += 5;
+            if (m.protein === 'High') { totalProteinGrams += 20; totalCalories += 400; }
+            else if (m.protein === 'Medium') { totalProteinGrams += 10; totalCalories += 350; }
+            else { totalProteinGrams += 5; totalCalories += 300; }
         }
     });
 
     // Protein score: High=3, Medium=2, Low=1. Target: at least 8 points (e.g., 2 High + 1 Med = 8)
     const proteinScore = (counts.proteinHigh * 3) + (counts.proteinMed * 2) + (counts.proteinLow * 1);
     const mealsPlanned = meals.length;
-    const maxScore = mealsPlanned * 3;
     
     // Determine protein status - now with grams target (50g+ is good for adults)
     let proteinStatus = '';
@@ -1360,13 +1364,13 @@ function renderDaySummary() {
         proteinStatus = 'No meals yet';
         proteinEmoji = '⚪';
     } else if (totalProteinGrams >= 50 || (proteinScore >= 8)) {
-        proteinStatus = `~${totalProteinGrams}g protein`;
+        proteinStatus = `~${totalProteinGrams}g · ${totalCalories}kcal`;
         proteinEmoji = '💪';
     } else if (totalProteinGrams >= 35 || proteinScore >= 6) {
-        proteinStatus = `~${totalProteinGrams}g protein`;
+        proteinStatus = `~${totalProteinGrams}g · ${totalCalories}kcal`;
         proteinEmoji = '👍';
     } else {
-        proteinStatus = `Only ~${totalProteinGrams}g`;
+        proteinStatus = `~${totalProteinGrams}g · ${totalCalories}kcal`;
         proteinEmoji = '⚠️';
     }
 
