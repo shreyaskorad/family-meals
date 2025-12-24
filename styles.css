@@ -546,6 +546,19 @@ svg {
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--gray-700, var(--gray-600));
+    transition: all 0.2s ease;
+}
+
+.summary-chip.chip-warn {
+    background: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.summary-chip.chip-good {
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    color: #16a34a;
 }
 
 .summary-warn {

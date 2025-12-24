@@ -1239,16 +1239,44 @@ function renderDaySummary() {
         else counts.proteinLow++;
     });
 
+    // Protein score: High=3, Medium=2, Low=1. Target: at least 8 points (e.g., 2 High + 1 Med = 8)
+    const proteinScore = (counts.proteinHigh * 3) + (counts.proteinMed * 2) + (counts.proteinLow * 1);
+    const mealsPlanned = meals.length;
+    const maxScore = mealsPlanned * 3;
+    
+    // Determine protein status
+    let proteinStatus = '';
+    let proteinEmoji = '';
+    if (mealsPlanned === 0) {
+        proteinStatus = 'No meals yet';
+        proteinEmoji = '⚪';
+    } else if (proteinScore >= 8 || (mealsPlanned < 4 && counts.proteinHigh >= 1)) {
+        proteinStatus = 'Good protein';
+        proteinEmoji = '💪';
+    } else if (proteinScore >= 6 || counts.proteinHigh >= 1) {
+        proteinStatus = 'Okay protein';
+        proteinEmoji = '👍';
+    } else {
+        proteinStatus = 'Needs protein!';
+        proteinEmoji = '⚠️';
+    }
+
     const chipSource = document.getElementById('chip-source');
     const chipProtein = document.getElementById('chip-protein');
     const warn = document.getElementById('summary-warn');
 
     if (chipSource) chipSource.textContent = `You ${counts.You} · Maid ${counts.Maid} · Order ${counts.Order}`;
-    if (chipProtein) chipProtein.textContent = `High ${counts.proteinHigh} · Med ${counts.proteinMed} · Low ${counts.proteinLow}`;
+    if (chipProtein) {
+        chipProtein.textContent = `${proteinEmoji} ${proteinStatus}`;
+        chipProtein.className = 'chip';
+        if (proteinStatus === 'Needs protein!') chipProtein.classList.add('chip-warn');
+        else if (proteinStatus === 'Good protein') chipProtein.classList.add('chip-good');
+    }
 
     const warnings = [];
-    if (counts.Order >= 3) warnings.push('High order-in day');
-    if (counts.proteinLow >= 3) warnings.push('Low protein day');
+    if (counts.Order >= 3) warnings.push('🍕 High order-in day');
+    if (mealsPlanned >= 3 && counts.proteinHigh === 0) warnings.push('💡 Add a high-protein meal');
+    if (mealsPlanned === 4 && proteinScore < 6) warnings.push('🥩 Consider: eggs, chicken, fish, paneer, dal');
 
     if (warn) {
         if (warnings.length) {
