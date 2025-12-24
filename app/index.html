@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Family Meals</title>
+
+    <!-- PWA meta tags -->
+    <meta name="theme-color" content="#000000">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Meals">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="manifest" href="manifest.json">
+
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- PLAN SECTION -->
+        <section id="plan-section" class="section active">
+            <div class="page-title">
+                <h1>Today</h1>
+                <span id="today-date"></span>
+            </div>
+
+            <div class="top-actions">
+                <button class="ghost-btn" onclick="openSettings()" aria-label="Settings">
+                    <svg viewBox="0 0 24 24"><path d="M12 15.5A3.5 3.5 0 1 0 12 8.5a3.5 3.5 0 0 0 0 7z"/><path d="M19.4 15a7.97 7.97 0 0 0 .1-1 7.97 7.97 0 0 0-.1-1l2.1-1.6-2-3.4-2.5 1a8.1 8.1 0 0 0-1.7-1l-.4-2.7H9.1L8.7 7a8.1 8.1 0 0 0-1.7 1l-2.5-1-2 3.4L4.6 13a7.97 7.97 0 0 0-.1 1 7.97 7.97 0 0 0 .1 1L2.5 16.6l2 3.4 2.5-1a8.1 8.1 0 0 0 1.7 1l.4 2.7h5.8l.4-2.7a8.1 8.1 0 0 0 1.7-1l2.5 1 2-3.4-2.1-1.6z"/></svg>
+                    Preferences
+                </button>
+            </div>
+
+            <div class="plan-controls">
+                <div class="segmented" role="group" aria-label="Plan duration">
+                    <button class="seg-btn active" data-days="1" onclick="setPlanDays(1)">1 day</button>
+                    <button class="seg-btn" data-days="3" onclick="setPlanDays(3)">3 days</button>
+                    <button class="seg-btn" data-days="5" onclick="setPlanDays(5)">5 days</button>
+                </div>
+
+                <div class="day-switch" aria-label="Day selector">
+                    <button class="day-btn" id="day-prev" onclick="prevDay()" aria-label="Previous day">
+                        <svg viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg>
+                    </button>
+                    <div class="day-label">
+                        <div class="day-title" id="day-title">Day 1</div>
+                        <div class="day-sub" id="day-subtitle">Today</div>
+                    </div>
+                    <button class="day-btn" id="day-next" onclick="nextDay()" aria-label="Next day">
+                        <svg viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+                    </button>
+                </div>
+
+                <div class="day-summary" id="day-summary" aria-label="Day summary">
+                    <div class="summary-chip" id="chip-source">You 0 · Maid 0 · Order 0</div>
+                    <div class="summary-chip" id="chip-protein">High 0 · Med 0 · Low 0</div>
+                    <div class="summary-warn" id="summary-warn" style="display:none"></div>
+                </div>
+            </div>
+
+            <details class="help-card" id="help-card">
+                <summary>How this works</summary>
+                <div class="help-body">
+                    <ul>
+                        <li><strong>Plan</strong>: tap a meal to cycle options, or use Shuffle.</li>
+                        <li><strong>Lock</strong>: tap the lock button to keep a slot fixed while shuffling.</li>
+                        <li><strong>3/5 days</strong>: shuffle once, then swipe days to review.</li>
+                        <li><strong>Grocery</strong>: switch to <strong>Shopping mode</strong> for a deduped checklist + copy.</li>
+                        <li><strong>Preferences</strong>: avoid repeats inside the plan; include/exclude baby in grocery.</li>
+                    </ul>
+                </div>
+            </details>
+
+            <button class="btn-main" onclick="shuffleAll()">
+                <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                Shuffle All
+            </button>
+
+            <div class="meals">
+                <!-- Breakfast -->
+                <div class="meal-card">
+                    <div class="meal-header">
+                        <span class="meal-type">Breakfast</span>
+                        <span class="meal-time">11am</span>
+                    </div>
+                    <div class="meal-body">
+                        <button class="meal-btn" id="pick-breakfast" onclick="cycleMeal('breakfast')">
+                            <span class="meal-name">Tap to pick</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-breakfast" onclick="toggleLock('breakfast')" aria-label="Lock breakfast">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('breakfast')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                    <div class="meal-body baby-row">
+                        <button class="meal-btn baby" id="pick-baby-breakfast" onclick="cycleMeal('babyBreakfast')">
+                            <span class="meal-name">Baby</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-babyBreakfast" onclick="toggleLock('babyBreakfast')" aria-label="Lock baby breakfast">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('babyBreakfast')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Lunch -->
+                <div class="meal-card">
+                    <div class="meal-header">
+                        <span class="meal-type">Lunch</span>
+                        <span class="meal-time">3pm</span>
+                    </div>
+                    <div class="meal-body">
+                        <button class="meal-btn" id="pick-lunch" onclick="cycleMeal('lunch')">
+                            <span class="meal-name">Tap to pick</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-lunch" onclick="toggleLock('lunch')" aria-label="Lock lunch">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('lunch')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                    <div class="meal-body baby-row">
+                        <button class="meal-btn baby" id="pick-baby-lunch" onclick="cycleMeal('babyLunch')">
+                            <span class="meal-name">Baby</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-babyLunch" onclick="toggleLock('babyLunch')" aria-label="Lock baby lunch">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('babyLunch')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Snacks -->
+                <div class="meal-card">
+                    <div class="meal-header">
+                        <span class="meal-type">Snacks</span>
+                        <span class="meal-time">6pm</span>
+                    </div>
+                    <div class="meal-body">
+                        <button class="meal-btn" id="pick-snacks" onclick="cycleMeal('snacks')">
+                            <span class="meal-name">Tap to pick</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-snacks" onclick="toggleLock('snacks')" aria-label="Lock snacks">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('snacks')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                    <div class="meal-body baby-row">
+                        <button class="meal-btn baby" id="pick-baby-snacks" onclick="cycleMeal('babySnacks')">
+                            <span class="meal-name">Baby</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-babySnacks" onclick="toggleLock('babySnacks')" aria-label="Lock baby snacks">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('babySnacks')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Dinner -->
+                <div class="meal-card">
+                    <div class="meal-header">
+                        <span class="meal-type">Dinner</span>
+                        <span class="meal-time">10pm</span>
+                    </div>
+                    <div class="meal-body">
+                        <button class="meal-btn" id="pick-dinner" onclick="cycleMeal('dinner')">
+                            <span class="meal-name">Tap to pick</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-dinner" onclick="toggleLock('dinner')" aria-label="Lock dinner">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('dinner')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                    <div class="meal-body baby-row">
+                        <button class="meal-btn baby" id="pick-baby-dinner" onclick="cycleMeal('babyDinner')">
+                            <span class="meal-name">Baby</span>
+                            <span class="meal-info"></span>
+                        </button>
+                        <button class="lock-btn" id="lock-babyDinner" onclick="toggleLock('babyDinner')" aria-label="Lock baby dinner">
+                            <svg viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3"/><path d="M6 11h12v10H6z"/></svg>
+                        </button>
+                        <button class="shuffle-btn" onclick="shuffleMeal('babyDinner')">
+                            <svg viewBox="0 0 24 24"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn-primary" onclick="goToGrocery()">
+                <svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12zM6 6L5 3H2M9 21a1 1 0 100-2 1 1 0 000 2zM18 21a1 1 0 100-2 1 1 0 000 2z"/></svg>
+                View Grocery List
+            </button>
+        </section>
+
+        <!-- GROCERY SECTION -->
+        <section id="grocery-section" class="section">
+            <div class="page-title">
+                <button class="back-btn" onclick="goBack()">
+                    <svg viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+                </button>
+                <h1>Grocery</h1>
+            </div>
+
+            <div class="grocery-toolbar" aria-label="Grocery options">
+                <button class="seg-btn" id="grocery-view-plan" onclick="setGroceryView('plan')">Meal view</button>
+                <button class="seg-btn" id="grocery-view-shop" onclick="setGroceryView('shop')">Shopping mode</button>
+            </div>
+
+            <div class="grocery-summary" id="grocery-summary" aria-label="Grocery summary">
+                <div class="grocery-summary-title" id="grocery-summary-title">0 items</div>
+                <div class="grocery-summary-sub" id="grocery-summary-sub">For 1 day</div>
+                <div class="grocery-summary-actions" id="grocery-summary-actions" style="display:none">
+                    <label class="toggle">
+                        <input type="checkbox" id="toggle-hide-bought" />
+                        <span>Hide bought</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="grocery-shop" id="grocery-shop" style="display:none">
+                <div class="shop-controls">
+                    <div class="shop-search">
+                        <input id="shop-search" class="add-input" type="text" placeholder="Search items (e.g., milk)" autocomplete="off" />
+                        <button class="icon-btn" id="btn-clear-search" aria-label="Clear search" title="Clear search" type="button">
+                            <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        </button>
+                    </div>
+
+                    <div class="shop-quick-actions" aria-label="Shopping quick actions">
+                        <button class="btn-secondary" id="btn-expand-all" type="button">
+                            <svg viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+                            Expand all
+                        </button>
+                        <button class="btn-secondary" id="btn-collapse-all" type="button">
+                            <svg viewBox="0 0 24 24"><path d="M7 14l5-5 5 5"/></svg>
+                            Collapse all
+                        </button>
+                        <button class="btn-secondary" id="btn-edit-pantry" type="button">
+                            <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 013 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>
+                            Pantry
+                        </button>
+                    </div>
+                </div>
+
+                <div class="grocery-actions">
+                    <button class="btn-primary" onclick="copyShoppingList()">
+                        <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
+                        Copy Shopping List
+                    </button>
+                    <button class="btn-secondary" onclick="copyBlinkitList()">
+                        <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
+                        Copy Blinkit
+                    </button>
+                    <button class="btn-secondary" onclick="resetShoppingChecks()">
+                        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1018 0 9 9 0 10-18 0"/><path d="M12 7v5l3 3"/></svg>
+                        Reset checks
+                    </button>
+                </div>
+                <div id="shopping-list" class="shopping-list"></div>
+            </div>
+
+            <div id="grocery-list" class="grocery-list"></div>
+
+            <button class="btn-primary" onclick="copyMaidList()">
+                <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
+                Copy Maid List
+            </button>
+            <button class="btn-secondary" id="full-list-btn" onclick="copyFullList()">
+                <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
+                Copy Full List
+            </button>
+
+            <div class="bottom-action-bar" id="grocery-bottom-bar" style="display:none" aria-label="Shopping actions">
+                <button class="btn-primary" onclick="copyShoppingList()">
+                    <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
+                    Copy
+                </button>
+                <button class="btn-secondary" onclick="copyBlinkitList()">
+                    <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
+                    Blinkit
+                </button>
+                <button class="btn-secondary" onclick="resetShoppingChecks()">
+                    <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1018 0 9 9 0 10-18 0"/><path d="M12 7v5l3 3"/></svg>
+                    Reset
+                </button>
+            </div>
+        </section>
+
+        <!-- PANTRY MODAL -->
+        <div id="pantry-modal" class="modal" style="display:none" aria-hidden="true">
+            <div class="modal-content">
+                <div class="modal-title">Pantry / Always have</div>
+                <div class="modal-desc">Items here won’t show up in Shopping mode unless you search for them.</div>
+                <textarea id="pantry-text" class="add-input" style="height:180px; padding:12px; resize:vertical" placeholder="One item per line\n\nExamples:\nSalt\nPepper\nCumin\nOlive oil\nGhee"></textarea>
+                <label class="toggle" style="margin-top:12px; width:100%; justify-content:space-between">
+                    <span>Hide pantry items</span>
+                    <input type="checkbox" id="toggle-hide-pantry" />
+                </label>
+                <div class="modal-actions">
+                    <button class="btn-secondary" id="btn-pantry-cancel" type="button">Cancel</button>
+                    <button class="btn-primary" id="btn-pantry-save" type="button">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MEALS SECTION -->
+        <section id="meals-section" class="section">
+            <div class="page-title">
+                <h1>All Meals</h1>
+                <button class="add-btn" onclick="openAddModal()">
+                    <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+                </button>
+            </div>
+
+            <div class="filter-tabs">
+                <button class="tab active" onclick="filterMeals('all')">All</button>
+                <button class="tab" onclick="filterMeals('breakfast')">Breakfast</button>
+                <button class="tab" onclick="filterMeals('lunch')">Lunch</button>
+                <button class="tab" onclick="filterMeals('snacks')">Snacks</button>
+                <button class="tab" onclick="filterMeals('dinner')">Dinner</button>
+                <button class="tab" onclick="filterMeals('baby')">Baby</button>
+            </div>
+
+            <div id="all-meals" class="all-meals"></div>
+        </section>
+    </div>
+
+    <!-- BOTTOM NAV -->
+    <nav class="nav">
+        <button class="nav-item active" data-section="plan" onclick="showSection('plan')">
+            <svg viewBox="0 0 24 24"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1"/></svg>
+            <span>Plan</span>
+        </button>
+        <button class="nav-item" data-section="grocery" onclick="showSection('grocery')">
+            <svg viewBox="0 0 24 24"><path d="M6 6h15l-1.5 9h-12zM6 6L5 3H2M9 21a1 1 0 100-2 1 1 0 000 2zM18 21a1 1 0 100-2 1 1 0 000 2z"/></svg>
+            <span>Grocery</span>
+        </button>
+        <button class="nav-item" data-section="meals" onclick="showSection('meals')">
+            <svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            <span>Meals</span>
+        </button>
+    </nav>
+
+    <!-- ADD MEAL MODAL - Multi-step flow -->
+    <div id="add-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-top">
+                <h2 id="add-step-title">What type of meal?</h2>
+                <button class="close-btn" onclick="closeAddModal()">
+                    <svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            
+            <!-- Step 1: Category -->
+            <div id="add-step-1" class="add-step active">
+                <div class="option-grid">
+                    <button class="option-btn" onclick="selectCategory('breakfast')">Breakfast</button>
+                    <button class="option-btn" onclick="selectCategory('lunch')">Lunch</button>
+                    <button class="option-btn" onclick="selectCategory('snacks')">Snacks</button>
+                    <button class="option-btn" onclick="selectCategory('dinner')">Dinner</button>
+                </div>
+            </div>
+            
+            <!-- Step 2: Name -->
+            <div id="add-step-2" class="add-step">
+                <input type="text" id="add-name" class="add-input" placeholder="Enter meal name" autocomplete="off">
+                <button class="btn-primary" onclick="nextToSource()">Next</button>
+            </div>
+            
+            <!-- Step 3: Source -->
+            <div id="add-step-3" class="add-step">
+                <div class="option-grid">
+                    <button class="option-btn" onclick="selectSource('You')">
+                        <span class="option-icon">
+                            <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </span>
+                        You Cook
+                    </button>
+                    <button class="option-btn" onclick="selectSource('Maid')">
+                        <span class="option-icon">
+                            <svg viewBox="0 0 24 24"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2m4-2a2 2 0 012 2H8a2 2 0 012-2h4z"/></svg>
+                        </span>
+                        Maid Cooks
+                    </button>
+                    <button class="option-btn" onclick="selectSource('Order')">
+                        <span class="option-icon">
+                            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                        </span>
+                        Order In
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Step 4: Protein -->
+            <div id="add-step-4" class="add-step">
+                <div class="option-grid">
+                    <button class="option-btn protein-high" onclick="selectProtein('High')">High Protein</button>
+                    <button class="option-btn protein-med" onclick="selectProtein('Medium')">Medium</button>
+                    <button class="option-btn protein-low" onclick="selectProtein('Low')">Low Protein</button>
+                </div>
+                <div class="add-field">
+                    <label class="add-label" for="add-ingredients">Ingredients (optional)</label>
+                    <textarea id="add-ingredients" class="add-textarea" rows="3" placeholder="Comma-separated (e.g., eggs, bread, butter)" list="food-items"></textarea>
+                    <div class="add-hint">Used for Shopping mode. Built-in meals use smart guessing; custom ingredients are exact.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-top">
+                <h2>Preferences</h2>
+                <button class="close-btn" onclick="closeSettings()">
+                    <svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="settings-list">
+                <label class="setting-row">
+                    <div class="setting-text">
+                        <div class="setting-title">Avoid repeats within plan</div>
+                        <div class="setting-sub">When shuffling 3/5 days, tries not to repeat the same dish across days.</div>
+                    </div>
+                    <input id="pref-avoid-within-plan" type="checkbox" />
+                </label>
+
+                <label class="setting-row">
+                    <div class="setting-text">
+                        <div class="setting-title">Include baby meals in grocery</div>
+                        <div class="setting-sub">Turn off if you’re not following baby plan for this cycle.</div>
+                    </div>
+                    <input id="pref-include-baby" type="checkbox" />
+                </label>
+            </div>
+
+            <button class="btn-secondary" style="display:flex" onclick="resetToday()">
+                Reset plan
+            </button>
+        </div>
+    </div>
+
+    <!-- EDIT INGREDIENTS MODAL -->
+    <div id="ingredients-modal" class="modal">
+        <div class="modal-box">
+            <div class="modal-top">
+                <h2>Edit ingredients</h2>
+                <button class="close-btn" onclick="closeIngredientsModal()">
+                    <svg viewBox="0 0 24 24"><path d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+
+            <div class="modal-content">
+                <div class="add-field">
+                    <label class="add-label" for="edit-ingredients">Ingredients (comma-separated)</label>
+                    <textarea id="edit-ingredients" class="add-textarea" rows="5" placeholder="e.g., chicken, rice, curd" list="food-items"></textarea>
+                    <div class="add-hint">This only affects Shopping mode and copy lists.</div>
+                </div>
+
+                <div class="modal-actions">
+                    <button class="btn-primary" onclick="saveIngredientsEdit()">Save</button>
+                    <button class="btn-secondary" onclick="closeIngredientsModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Shared item suggestions (fed by FOOD_DB) -->
+    <datalist id="food-items"></datalist>
+
+    <script src="data.js"></script>
+    <script src="db/food_db.js"></script>
+    <script src="app.js"></script>
+
+    <!-- Register service worker for PWA -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('./sw.js')
+            .then(reg => console.log('SW registered:', reg.scope))
+            .catch(err => console.log('SW registration failed:', err));
+        });
+      }
+    </script>
+</body>
+</html>
