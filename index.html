@@ -263,17 +263,13 @@
                 </div>
 
                 <div class="grocery-actions">
-                    <button class="btn-primary" onclick="copyShoppingList()">
+                    <button class="btn-primary" onclick="copyForShopping()">
                         <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
-                        Copy Shopping List
+                        📋 Copy for Blinkit
                     </button>
-                    <button class="btn-secondary" onclick="copyBlinkitList()">
+                    <button class="btn-secondary" onclick="copyForMaid()">
                         <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
-                        Copy Blinkit
-                    </button>
-                    <button class="btn-secondary" onclick="resetShoppingChecks()">
-                        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1018 0 9 9 0 10-18 0"/><path d="M12 7v5l3 3"/></svg>
-                        Reset checks
+                        👩‍🍳 Copy for Maid
                     </button>
                 </div>
                 <div id="shopping-list" class="shopping-list"></div>
@@ -281,27 +277,15 @@
 
             <div id="grocery-list" class="grocery-list"></div>
 
-            <button class="btn-primary" onclick="copyMaidList()">
-                <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
-                Copy Maid List
-            </button>
-            <button class="btn-secondary" id="full-list-btn" onclick="copyFullList()">
-                <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
-                Copy Full List
-            </button>
-
             <div class="bottom-action-bar" id="grocery-bottom-bar" style="display:none" aria-label="Shopping actions">
-                <button class="btn-primary" onclick="copyShoppingList()">
-                    <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
-                    Copy
+                <button class="btn-primary" onclick="copyForShopping()">
+                    📋 Blinkit
                 </button>
-                <button class="btn-secondary" onclick="copyBlinkitList()">
-                    <svg viewBox="0 0 24 24"><path d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h12a2 2 0 002-2V7a2 2 0 00-2-2h-2M8 5V3h8v2M8 5h8"/></svg>
-                    Blinkit
+                <button class="btn-secondary" onclick="copyForMaid()">
+                    👩‍🍳 Maid
                 </button>
                 <button class="btn-secondary" onclick="resetShoppingChecks()">
-                    <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1018 0 9 9 0 10-18 0"/><path d="M12 7v5l3 3"/></svg>
-                    Reset
+                    🔄 Reset
                 </button>
             </div>
         </section>

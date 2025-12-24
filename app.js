@@ -156,11 +156,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const shopSearch = document.getElementById('shop-search');
     if (shopSearch) {
         shopSearch.value = groceryUiPrefs.search || '';
-        shopSearch.addEventListener('input', () => {
+        
+        // Use both input and keyup for better responsiveness
+        const handleSearch = () => {
             groceryUiPrefs.search = shopSearch.value || '';
             saveGroceryUiPrefs();
-            if (groceryView === 'shop') renderShoppingList(buildShoppingItemsForPlan());
-        });
+            renderShoppingList(buildShoppingItemsForPlan());
+        };
+        
+        shopSearch.addEventListener('input', handleSearch);
+        shopSearch.addEventListener('keyup', handleSearch);
     }
 
     const clearSearchBtn = document.getElementById('btn-clear-search');
@@ -169,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
             shopSearch.value = '';
             groceryUiPrefs.search = '';
             saveGroceryUiPrefs();
-            if (groceryView === 'shop') renderShoppingList(buildShoppingItemsForPlan());
+            renderShoppingList(buildShoppingItemsForPlan());
             shopSearch.focus();
         });
     }
@@ -838,64 +843,27 @@ function resetShoppingChecks() {
     showToast('Checks reset');
 }
 
-function copyShoppingList() {
+// ============================================
+// SIMPLIFIED COPY FUNCTIONS
+// ============================================
+
+// Copy for Blinkit/BigBasket/Zepto - simple list, remaining items only
+function copyForShopping() {
     const items = buildShoppingItemsForPlan();
     if (!items.length) {
         showToast('Pick meals first');
         return;
     }
 
-    const groupOrder = ['veggies', 'fruits', 'dairy', 'protein', 'bread', 'pantry', 'custom'];
-    const labelMap = {
-        veggies: 'VEGGIES',
-        fruits: 'FRUITS',
-        dairy: 'DAIRY',
-        protein: 'PROTEIN',
-        bread: 'BREAD',
-        pantry: 'PANTRY',
-        custom: 'OTHER'
-    };
-
-    const byGroup = {};
-    items.forEach(it => {
-        const g = it.group || 'custom';
-        if (!byGroup[g]) byGroup[g] = [];
-        byGroup[g].push(it);
-    });
-
-    const lines = [];
-    lines.push(`SHOPPING LIST (${planDays} day${planDays === 1 ? '' : 's'})`);
-    lines.push('');
-
-    groupOrder.forEach(g => {
-        const list = byGroup[g] || [];
-        if (!list.length) return;
-        lines.push(labelMap[g] || g.toUpperCase());
-        list.sort((a, b) => a.item.localeCompare(b.item));
-        list.forEach(it => {
-            const q = formatQty(it);
-            lines.push(`- ${it.item}${q ? ` (${q})` : ''}`);
-        });
-        lines.push('');
-    });
-
-    copyToClipboard(lines.join('\n'));
-    showToast('Shopping list copied');
-}
-
-function copyBlinkitList() {
-    const items = buildShoppingItemsForPlan();
-    if (!items.length) {
-        showToast('Pick meals first');
+    // Only remaining (unchecked) items
+    const remaining = items.filter(it => !shoppingChecks[it.key]);
+    
+    if (!remaining.length) {
+        showToast('All items checked off! ✅');
         return;
     }
 
-    // By default, exclude items already checked off.
-    const remaining = items
-        .filter(it => !shoppingChecks[it.key])
-        .sort((a, b) => a.item.localeCompare(b.item));
-
-    const list = (remaining.length ? remaining : items)
+    const list = remaining
         .sort((a, b) => a.item.localeCompare(b.item))
         .map(it => {
             const q = formatQty(it);
@@ -903,8 +871,71 @@ function copyBlinkitList() {
         });
 
     copyToClipboard(list.join('\n'));
-    showToast('Blinkit list copied');
+    showToast(`Copied ${list.length} items 📋`);
 }
+
+// Copy for Maid - grouped by what she needs to prep, only maid-sourced meals
+function copyForMaid() {
+    const maidMeals = [];
+    
+    for (let i = 0; i < planDays; i++) {
+        const dayPlan = plans[i] || {};
+        MEAL_CATEGORIES.forEach(cat => {
+            const meal = dayPlan[cat];
+            if (meal && meal.source === 'Maid') {
+                maidMeals.push({
+                    day: i + 1,
+                    category: cat.replace('baby', 'Baby '),
+                    name: meal.name
+                });
+            }
+        });
+    }
+
+    if (!maidMeals.length) {
+        showToast('No maid meals planned');
+        return;
+    }
+
+    // Group by day
+    const lines = [];
+    lines.push(`🍳 MAID INSTRUCTIONS (${planDays} day${planDays === 1 ? '' : 's'})`);
+    lines.push('');
+
+    for (let d = 1; d <= planDays; d++) {
+        const dayMeals = maidMeals.filter(m => m.day === d);
+        if (dayMeals.length) {
+            lines.push(d === 1 ? '📅 TODAY:' : `📅 DAY ${d}:`);
+            dayMeals.forEach(m => {
+                const catLabel = m.category.replace('Breakfast', '🌅').replace('Lunch', '☀️').replace('Snacks', '🍿').replace('Dinner', '🌙');
+                lines.push(`  ${catLabel} ${m.name}`);
+            });
+            lines.push('');
+        }
+    }
+
+    // Add grocery items for maid
+    const items = buildShoppingItemsForPlan();
+    const remaining = items.filter(it => !shoppingChecks[it.key]);
+    
+    if (remaining.length) {
+        lines.push('🛒 NEED TO BUY:');
+        remaining.slice(0, 15).forEach(it => {
+            const q = formatQty(it);
+            lines.push(`  • ${it.item}${q ? ` (${q})` : ''}`);
+        });
+        if (remaining.length > 15) {
+            lines.push(`  ... and ${remaining.length - 15} more`);
+        }
+    }
+
+    copyToClipboard(lines.join('\n'));
+    showToast(`Copied maid list 👩‍🍳`);
+}
+
+// Legacy functions (keep for backward compatibility)
+function copyShoppingList() { copyForShopping(); }
+function copyBlinkitList() { copyForShopping(); }
 
 function goToGrocery() {
     showSection('grocery');
